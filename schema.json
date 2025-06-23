@@ -1,0 +1,26 @@
+{
+  "input": {
+    "type": "object",
+    "properties": {
+      "lyrics": { "type": "string" }
+    },
+    "required": ["lyrics"]
+  },
+  "output": {
+    "type": "object",
+    "properties": {
+      "scenes": {
+        "type": "array",
+        "items": {
+          "type": "object",
+          "properties": {
+            "timecode": { "type": "string" },
+            "description": { "type": "string" }
+          },
+          "required": ["description"]
+        }
+      }
+    },
+    "required": ["scenes"]
+  }
+}
