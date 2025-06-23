@@ -1,4 +1,4 @@
 camel-ai
-siliconflow-deepseek
 python-dotenv
 jsonschema
+openai
