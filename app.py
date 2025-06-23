@@ -19,6 +19,7 @@ if not api_key:
 # -------------------------------
 with open("schema.json", encoding="utf-8") as f:
     schema = json.load(f)
+    schema_str = json.dumps(schema["output"], ensure_ascii=False, indent=2)
 
 # -------------------------------
 # 3. 初始化 OpenAI 客户端（指向 DeepSeek 接口）
@@ -35,10 +36,17 @@ def generate_scene_text(lyrics: str) -> str:
     """
     对传入的歌词发起流式请求，实时打印增量内容，返回完整的响应文本。
     """
+
+    system_content = (
+        "你是一个专业的 MV 场景描述助手。\n"
+        "请**严格**按照以下 JSON Schema 输出，**只返回 JSON**，"
+        "不要任何多余文字：\n" + schema_str
+    )
+
     response = client.chat.completions.create(
         model="Pro/deepseek-ai/DeepSeek-R1",  # DeepSeek 模型名称
         messages=[
-            {"role": "system", "content": "你是一个 MV 场景描述助手。"},
+            {"role": "system", "content": system_content},
             {"role": "user",   "content": lyrics}
         ],
         temperature=0,
@@ -81,6 +89,7 @@ def main():
 
     # 5.3 调用 DeepSeek，流式打印并收集完整响应
     raw_json = generate_scene_text(lyrics)
+    print("模型返回的原始 JSON：", raw_json)
 
     # 5.4 尝试将响应解析为 JSON
     try:
