@@ -70,7 +70,7 @@ model_cfg = cfg.as_dict()
 # 2.2 创建后端 & 包装成 ChatAgent
 backend = ModelFactory.create(
     model_platform=ModelPlatformType.SILICONFLOW,
-    model_type="Pro/deepseek-ai/DeepSeek-R1",
+    model_type="Pro/deepseek-ai/DeepSeek-V3",
     model_config_dict=model_cfg,
     api_key=api_key,
     url="https://api.siliconflow.cn/v1/",
@@ -83,4 +83,5 @@ agent = ChatAgent(
 )
 
 response = agent.step("Say hi to CAMEL AI community.")
+
 print(response.msg.content)
