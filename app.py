@@ -4,6 +4,7 @@
 import os
 import json
 import sys
+import re
 from dotenv import load_dotenv
 from openai import RateLimitError
 
@@ -172,13 +173,42 @@ output_agent = ChatAgent(
     system_message=BaseMessage.make_assistant_message(
         role_name="OutputAgent",
         content=(
-            "你是 OutputAgent，接收 ReasoningAgent 对每个段落的自然语言场景描述，\n"
-            "不同段落的描述要放在对应的时间戳里，\n"
-            "请严格按照以下 JSON Schema 输出，仅返回 JSON，不要多余文字：\n"
-            f"{schema_str}"
+                "你是 OutputAgent，负责将 SceneAgent 对每个段落的自然语言场景描述\n"
+                "整合成一个单一的 JSON 对象并直接输出。\n"
+                "请严格遵守以下要求：\n"
+                "1. **仅输出 JSON**，禁止任何 Markdown 代码块（```）、注释或额外说明。\n"
+                "2. 输出必须以 “{” 开头，以 “}” 结尾，整体上是一个有效的 JSON 对象。\n"
+                "3. 顶层必须包含键 “scenes”，其值是一个数组，且数组项按 timecode 升序排列。\n"
+                "4. timecode应该是一个时间段，比如"'00:32-00:57'""
+                "5. **不要**输出任何额外字段。\n"
+                "6. 最终输出必须符合以下 JSON Schema（不要修改此结构）：\n"
+                f"{schema_str}"
         ),
     ),
     model=backend_normal,
+)
+
+# 5) 输出格式化 Agent
+format_agent = ChatAgent(
+    system_message=BaseMessage.make_assistant_message(
+        role_name="FormatAgent",
+        content=(
+                "你是 FormatAgent，负责校验 OutputAgent 是否输出的是一个标准的JSON\n"
+                "如果是标准的JSON，则原封不动直接输出。\n"
+                "如果不是标准的JSON，则转变为标准的JSON再输出。\n"
+                "以下是如果输入不是标准JSON的输出规则：\n"
+                "整合成一个单一的 JSON 对象并直接输出。\n"
+                "请严格遵守以下要求：\n"
+                "1. **仅输出 JSON**，禁止任何 Markdown 代码块（```）、注释或额外说明。\n"
+                "2. 输出必须以 “{” 开头，以 “}” 结尾，整体上是一个有效的 JSON 对象。\n"
+                "3. 顶层必须包含键 “scenes”，其值是一个数组，且数组项按 timecode 升序排列。\n"
+                "4. timecode应该是一个时间段，比如"'00:32-00:57'""
+                "5. **不要**输出任何额外字段。\n"
+                "6. 最终输出必须符合以下 JSON Schema（不要修改此结构）：\n"
+                f"{schema_str}"
+        ),
+    ),
+    model=backend_fast,
 )
 
 # -------------------------------
@@ -222,16 +252,17 @@ def main():
     if normalized_lyrics != normalized_raw:
         print("\n⚠️ 检测到敏感内容，已进行安全过滤")
 
+    # 2）分段
     resp2=grouping_agent.step(lyrics)
     grouped_lyrics=resp2.msg.content
     print(f"\n【GroupingAgent 输出】\n{grouped_lyrics}")
 
-    # 2) 自然语言描述
+    # 3) 自然语言描述
     resp3 = reasoning_agent.step(grouped_lyrics)
     natural = resp3.msg.content
     print(f"\n【ReasoningAgent 输出】\n{natural}")
 
-    # 3) JSON 流式生成
+    # 4) JSON 流式生成
     print("\n【OutputAgent 开始流式生成 JSON】")
     raw_json = output_agent.step(natural)
 
@@ -239,9 +270,19 @@ def main():
     print("\n【Raw JSON】")
     print(raw_json)
 
+    # 5）校验
+    output_json = raw_json.msg.content
+    print ("\n【第一个输出的 JSON】")
+    print (output_json)
+
+    # 5）校验agent
+    print("\n【美化后的 JSON（RAW）】")
+    validate_json=format_agent.step(output_json)
+    json_str = validate_json.msg.content
+    print(json_str)
+    data     = json.loads(json_str)
+    pretty   = json.dumps(data, ensure_ascii=False, indent=2)
     print("\n【美化后的 JSON】")
-    data = json.loads(raw_json.msg.content)
-    pretty = json.dumps(data, ensure_ascii=False, indent=2)
     print(pretty)
 
 if __name__ == "__main__":

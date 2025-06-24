@@ -2,9 +2,13 @@
   "input": {
     "type": "object",
     "properties": {
-      "lyrics": { "type": "string" }
+      "lyrics": {
+        "type": "string"
+      }
     },
-    "required": ["lyrics"]
+    "required": [
+      "lyrics"
+    ]
   },
   "output": {
     "type": "object",
@@ -14,13 +18,66 @@
         "items": {
           "type": "object",
           "properties": {
-            "timecode": { "type": "string" },
-            "description": { "type": "string" }
+            "timecode": {
+              "type": "string"
+            },
+            "lyrics": {
+              "type": "string"
+            },
+            "scene": {
+              "type": "string"
+            },
+            "description": {
+              "type": "string"
+            },
+            "background_location": {
+              "type": "string"
+            },
+            "characters": {
+              "type": "array",
+              "items": {
+                "type": "object",
+                "properties": {
+                  "name": {
+                    "type": "string"
+                  },
+                  "age": {
+                    "type": "integer"
+                  },
+                  "costume": {
+                    "type": "string"
+                  }
+                },
+                "required": [
+                  "name"
+                ]
+              }
+            },
+            "actions": {
+              "type": "array",
+              "items": {
+                "type": "string"
+              }
+            },
+            "mood": {
+              "type": "string"
+            }
           },
-          "required": ["description"]
+          "required": [
+            "timecode",
+            "lyrics",
+            "scene",
+            "description",
+            "background_location",
+            "characters",
+            "actions",
+            "mood"
+          ]
         }
       }
     },
-    "required": ["scenes"]
+    "required": [
+      "scenes"
+    ]
   }
 }
