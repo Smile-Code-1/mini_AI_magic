@@ -25,34 +25,6 @@ api_key = os.getenv("DEEPSEEK_API_KEY")
 if not api_key:
     raise RuntimeError("请先在 .env 中配置 DEEPSEEK_API_KEY")
 
-# -------------------------------
-# 2. 加载 JSON Schema
-# -------------------------------
-with open("schema.json", encoding="utf-8") as f:
-    schema = json.load(f)
-input_schema  = schema["input"]
-output_schema = schema["output"]
-schema_str    = json.dumps(output_schema, ensure_ascii=False, indent=2)
-
-# ====================================
-# 模块一：InputAgent（本地敏感词 & 注入过滤）
-# ====================================
-SENSITIVE_WORDS = {"涉黄", "涉政", "违法"}
-
-def InputAgent(raw: str) -> str:
-    """
-    替换敏感词、去掉以 / 或 # 开头的注入行，返回过滤后的歌词。
-    """
-    # 敏感词屏蔽
-    for w in SENSITIVE_WORDS:
-        raw = raw.replace(w, "*" * len(w))
-    # 去掉以 “/” 或 “#” 开头的行
-    lines = []
-    for line in raw.splitlines():
-        if re.match(r"^\s*(/|#)", line):
-            continue
-        lines.append(line)
-    return "\n".join(lines)
 
 # ============================================
 # 模块二：GenerationAgent（SiliconFlowModel + 流式调用）
