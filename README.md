@@ -33,7 +33,7 @@
 1. 克隆本仓库：
 
    ```bash
-   git clone <your-repo-url>
+   git clone https://github.com/Smile-Code-1/mini_AI_magic.git
    cd mini_AI_magic
    ```
 2. 安装 Python 依赖：
@@ -114,11 +114,7 @@ cfg_high_temp = SiliconFlowConfig(temperature=1.2, top_p=1, stream=True, max_tok
   未正确设置环境变量，检查 `.env` 文件和 Key 是否书写正确。
 
 * **网络问题导致请求失败**
-  确认网络环境可以访问 `api.siliconflow.cn`，或考虑使用 VPN。
+  确认网络环境可以访问 `api.siliconflow.cn`
 
 * **JSON 校验错误**
   查看 `schema.json` 中的字段是否被改动，或检查模型输出是否符合 Schema 规范。
-
-## 许可证
-
-本项目采用 MIT 协议，详细见 LICENSE 文件。
