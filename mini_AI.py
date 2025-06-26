@@ -118,11 +118,22 @@ def resp(agent: ChatAgent, input: str) -> str:
     accumulated_resp = str()  # 累计响应，用于作为返回值
     agent.update_memory(BaseMessage.make_user_message(role_name="User", content=input), OpenAIBackendRole.USER)
     messages = agent.memory.get_context()  # 用输入内容更新语境记忆，以确保响应内容是针对用户输入而非仅仅系统信息
+    start_reasoning=False
+    start_contant=False
     for chunk in (agent.model_backend.run(messages[0])):
         chunk_content = chunk.choices[0].delta.content  # 记录单次响应传输内容
+        reasoning_output=chunk.choices[0].delta.reasoning_content #思考内容
         if isinstance(chunk_content, str):  # 确保响应为str，避免NoneType等数值类型干扰
-            print(chunk_content, end='')  # 响应字符串打印
+            if (start_contant==False):
+                start_contant=True
+                print("\n 【回复】：")
+            print(chunk_content, end='',flush=True)  # 响应字符串打印
             accumulated_resp += chunk_content  # 响应字符串累加
+        if isinstance(reasoning_output,str): #思考过程
+            if (start_reasoning==False):
+                start_reasoning=True
+                print("\n 【深度思考】：") 
+            print(reasoning_output,end='',flush=True)
     print()
     return accumulated_resp  # 返回累计响应
 
@@ -185,6 +196,7 @@ reasoning_agent = ChatAgent(
         content=(
             "你是 SceneAgent，请基于 GroupingAgent 输出的各段歌词，用自然语言分别描述对应的 MV 场景要点。\n"
             "对每个段落，尽可能给出画面感：视觉元素、主要角色、氛围色调、动作等。\n"
+            "每一个段落要给出GroupingAgent提供的对应的歌词，歌词要完整，要明确列出哪部分是歌词。\n"
             "并尝试为每段提供一个大致的时间码范围。"
         ),
     ),
@@ -244,7 +256,7 @@ def main():
     print ("处理歌词中：\n")
 
     # 发送给 InputAgent 处理
-    print(f"\n【InputAgent 输出】\n")
+    print(f"【InputAgent 输出】：")
     lyrics = resp(input_agent, user_input)
 
     # 标准化比较：去除首尾空白，统一换行符
@@ -261,30 +273,29 @@ def main():
     normalized_lyrics = normalize_text(lyrics)
 
     if normalized_lyrics != normalized_raw:
-        print("\n⚠️ 检测到敏感内容，已进行安全过滤")
+        print("⚠️ 检测到敏感内容，已进行安全过滤")
 
     # 2）分段
-    print(f"\n【GroupingAgent 输出】\n")
+    print(f"\n【GroupingAgent 输出】：")
     grouped_lyrics = resp(grouping_agent, lyrics)
 
     
     # 3) 自然语言描述
-    print(f"\n【ReasoningAgent 输出】\n")
+    print(f"\n【ReasoningAgent 输出】：")
     natural = resp(reasoning_agent, grouped_lyrics)
 
 
     # 4) JSON 流式生成，美化并打印（无任何校验）
-    print("\n【OutputAgent 开始流式生成 JSON】\n")
-    print ("\n【原始 JSON】\n")
+    print("\n【OutputAgent 开始流式生成 JSON】：")
+    print ("\n 原始【JSON】：")
     raw_json = resp(output_agent, natural)
 
     # 5）校验agent
-    print("\n【美化后的 JSON（RAW）】")
-    validate_json=format_agent.step(raw_json)
-    json_str = validate_json.msg.content
-    data     = json.loads(json_str)
+    print("\n【美化后的 JSON（RAW）】：")
+    validate_json=resp(format_agent,raw_json)
+    data     = json.loads(validate_json)
     pretty   = json.dumps(data, ensure_ascii=False, indent=2)
-    print("\n【美化后的 JSON】")
+    print("\n【美化后的 JSON】：")
     print(pretty)
 
 
