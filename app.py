@@ -12,7 +12,7 @@ from camel.models import ModelFactory
 from camel.configs import SiliconFlowConfig
 from camel.agents import ChatAgent
 from camel.messages import BaseMessage
-from camel.types.enums import ModelPlatformType
+from camel.types.enums import ModelPlatformType,OpenAIBackendRole
 from camel.societies.workforce import Workforce
 from camel.tasks import Task
 
@@ -90,19 +90,42 @@ backend_normal_highTemp = ModelFactory.create(
 # 处理输入
 # -------------------------------
 def get_user_input() -> str:
-    """安全获取用户输入（按 Ctrl+D 后回车结束）"""
-    print("请粘贴歌词（输入完成后按 Ctrl+D，然后按回车结束）：")
-
+    """获取用户输入"""
+    # 1) 读取输入（按 Ctrl+D 后回车结束）
+    print("请粘贴歌词，输入完成后按一下顺序结束输入：\n"
+          "（回车、Ctrl+D或者Ctrl+Z、回车） \n ")
     try:
-        # 使用 sys.stdin.read() 读取所有输入，直到 Ctrl+D
-        raw_input = sys.stdin.read()
-        if not raw_input.strip():  # 检查是否为空输入
+        raw = sys.stdin.read().strip()  # 读取直到 EOF (Ctrl+D)
+        if not raw:
             print("错误：未接收到任何输入内容")
             sys.exit(1)
-        return raw_input.strip()  # 去除首尾空白
-    except KeyboardInterrupt:  # 用户按 Ctrl+C 取消
+    except KeyboardInterrupt:
         print("\n输入已取消")
         sys.exit(0)
+        # 唯一的安全检查：防止指令注入
+    try:
+        raw = prevent_command_injection(raw)  # 仅此一处修改
+    except ValueError as e:
+        print(f"安全拒绝: {str(e)}")
+        sys.exit(1)
+    return raw
+
+# -------------------------------
+# 定义流式响应输出函数，对话结束时可返回累计输出
+# -------------------------------
+def resp(agent: ChatAgent, input: str) -> str:
+    """流式响应输出函数，参数为Agent和提示词，将Agent对于提示词的响应实时流式广播到终端，对话结束时返回累计输出"""
+    accumulated_resp = str()  # 累计响应，用于作为返回值
+    agent.update_memory(BaseMessage.make_user_message(role_name="User", content=input), OpenAIBackendRole.USER)
+    messages = agent.memory.get_context()  # 用输入内容更新语境记忆，以确保响应内容是针对用户输入而非仅仅系统信息
+    for chunk in (agent.model_backend.run(messages[0])):
+        chunk_content = chunk.choices[0].delta.content  # 记录单次响应传输内容
+        if isinstance(chunk_content, str):  # 确保响应为str，避免NoneType等数值类型干扰
+            print(chunk_content, end='')  # 响应字符串打印
+            accumulated_resp += chunk_content  # 响应字符串累加
+    print()
+    return accumulated_resp  # 返回累计响应
+
 # -------------------------------
 # 纯指令注入防护函数
 # -------------------------------
@@ -216,27 +239,13 @@ format_agent = ChatAgent(
 # -------------------------------
 def main():
     # 1) 读取输入（按 Ctrl+D 后回车结束）
-    print("请粘贴歌词，输入完成后按一下顺序结束输入：\n"
-          "（回车、Ctrl+D或者Ctrl+Z、回车） \n ")
-    try:
-        raw = sys.stdin.read().strip()  # 读取直到 EOF (Ctrl+D)
-        if not raw:
-            print("错误：未接收到任何输入内容")
-            sys.exit(1)
-    except KeyboardInterrupt:
-        print("\n输入已取消")
-        sys.exit(0)
-        # 唯一的安全检查：防止指令注入
-    try:
-        raw = prevent_command_injection(raw)  # 仅此一处修改
-    except ValueError as e:
-        print(f"安全拒绝: {str(e)}")
-        sys.exit(1)
+    user_input=get_user_input()
 
     print ("处理歌词中：\n")
+
     # 发送给 InputAgent 处理
-    resp1 = input_agent.step(raw)
-    lyrics = resp1.msg.content
+    print(f"\n【InputAgent 输出】\n")
+    lyrics = resp(input_agent, user_input)
 
     # 标准化比较：去除首尾空白，统一换行符
     def normalize_text(text):
@@ -251,42 +260,34 @@ def main():
     normalized_raw = normalize_text(raw)
     normalized_lyrics = normalize_text(lyrics)
 
-    print(f"\n【InputAgent 输出】\n{lyrics}")
     if normalized_lyrics != normalized_raw:
         print("\n⚠️ 检测到敏感内容，已进行安全过滤")
 
     # 2）分段
-    resp2=grouping_agent.step(lyrics)
-    grouped_lyrics=resp2.msg.content
-    print(f"\n【GroupingAgent 输出】\n{grouped_lyrics}")
+    print(f"\n【GroupingAgent 输出】\n")
+    grouped_lyrics = resp(grouping_agent, lyrics)
 
+    
     # 3) 自然语言描述
-    resp3 = reasoning_agent.step(grouped_lyrics)
-    natural = resp3.msg.content
-    print(f"\n【ReasoningAgent 输出】\n{natural}")
+    print(f"\n【ReasoningAgent 输出】\n")
+    natural = resp(reasoning_agent, grouped_lyrics)
 
-    # 4) JSON 流式生成
-    print("\n【OutputAgent 开始流式生成 JSON】")
-    raw_json = output_agent.step(natural)
 
-    # 4) 美化并打印（无任何校验）
-    print("\n【Raw JSON】")
-    print(raw_json)
-
-    # 5）校验
-    output_json = raw_json.msg.content
-    print ("\n【第一个输出的 JSON】")
-    print (output_json)
+    # 4) JSON 流式生成，美化并打印（无任何校验）
+    print("\n【OutputAgent 开始流式生成 JSON】\n")
+    print ("\n【原始 JSON】\n")
+    raw_json = resp(output_agent, natural)
 
     # 5）校验agent
     print("\n【美化后的 JSON（RAW）】")
-    validate_json=format_agent.step(output_json)
+    validate_json=format_agent.step(raw_json)
     json_str = validate_json.msg.content
-    print(json_str)
     data     = json.loads(json_str)
     pretty   = json.dumps(data, ensure_ascii=False, indent=2)
     print("\n【美化后的 JSON】")
     print(pretty)
+
+
 
 if __name__ == "__main__":
     main()
