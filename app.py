@@ -20,9 +20,9 @@ from camel.tasks import Task
 # 环境 & API Key
 # -------------------------------
 load_dotenv()
-api_key = os.getenv("DEEPSEEK_API_KEY")
+api_key = os.getenv("API_KEY")
 if not api_key:
-    raise RuntimeError("请先在 .env 中配置 DEEPSEEK_API_KEY")
+    raise RuntimeError("请先在 .env 中配置 API_KEY")
 
 # -------------------------------
 # 加载 JSON Schema（仅为 OutputAgent 美化参考）
@@ -35,7 +35,7 @@ schema_str = json.dumps(schema["output"], ensure_ascii=False, indent=2)
 # 构建两个 DeepSeek 后端：快速 & 完整
 # -------------------------------
 cfg = SiliconFlowConfig(
-    temperature=0.0,
+    temperature=0,
     top_p=0.8,
     stream=True,
     # max tokens:
@@ -109,14 +109,14 @@ def get_user_input() -> str:
 def prevent_command_injection(text: str) -> str:
     """唯一目标：防止命令注入攻击"""
     # 仅检查可能用于命令注入的特殊字符
-    command_chars = {';', '|', '&', '$', '`', '\\'}
+    command_chars = { '|', '&', '$', '`', '\\'}
     if any(char in text for char in command_chars):
         raise ValueError("检测到潜在命令注入字符")
     return text
 
 
 # -------------------------------
-# 定义四个 Agent
+# 定义五个 Agent
 # -------------------------------
 
 # 1) 输入过滤 Agent
