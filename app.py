@@ -257,7 +257,7 @@ def main():
         lines = [line.strip() for line in text.split('\n')]
         return '\n'.join(filter(None, lines))  # 移除空行但保留换行结构
 
-    normalized_raw = normalize_text(raw)
+    normalized_raw = normalize_text(user_input)
     normalized_lyrics = normalize_text(lyrics)
 
     if normalized_lyrics != normalized_raw:
