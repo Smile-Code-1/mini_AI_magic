@@ -66,7 +66,7 @@ API_KEY=你的SiliconFlow或OpenAI API Key
 ├── .env                  # 环境变量文件，存放 API_KEY
 ├── requirements.txt      # Python 依赖清单
 ├── schema.json           # 输出 JSON Schema 定义
-├── app.py                # 主程序入口
+├── mini_AI.py                # 主程序入口
 └── README.md             # 使用说明文档
 ```
 
@@ -75,7 +75,7 @@ API_KEY=你的SiliconFlow或OpenAI API Key
 1. 在命令行中运行主程序：
 
    ```bash
-   python app.py
+   python mini_AI.py
    ```
 
 2. 按提示在终端粘贴整首歌词，输入完成后按 `Ctrl+D` (Unix/macOS) 或 `Ctrl+Z` + 回车 (Windows)。
@@ -92,7 +92,7 @@ API_KEY=你的SiliconFlow或OpenAI API Key
 
 ## 配置参数说明
 
-在 `app.py` 顶部，可通过修改 `SiliconFlowConfig` 对象调整模型行为：
+在 `mini_AI.py` 顶部，可通过修改 `SiliconFlowConfig` 对象调整模型行为：
 
 ```python
 # 快速通道（低温度、0.8 top_p）
