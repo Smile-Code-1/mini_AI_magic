@@ -216,7 +216,8 @@ format_agent = ChatAgent(
 # -------------------------------
 def main():
     # 1) 读取输入（按 Ctrl+D 后回车结束）
-    print("请粘贴歌词（输入完成后按回车再按Ctrl+D结束）: ")
+    print("请粘贴歌词，输入完成后按一下顺序结束输入：\n"
+          "（回车、Ctrl+D或者Ctrl+Z、回车） \n ")
     try:
         raw = sys.stdin.read().strip()  # 读取直到 EOF (Ctrl+D)
         if not raw:
@@ -231,6 +232,8 @@ def main():
     except ValueError as e:
         print(f"安全拒绝: {str(e)}")
         sys.exit(1)
+
+    print ("处理歌词中：\n")
     # 发送给 InputAgent 处理
     resp1 = input_agent.step(raw)
     lyrics = resp1.msg.content
