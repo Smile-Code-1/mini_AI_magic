@@ -25,7 +25,7 @@
 
 * **操作系统**：Linux/macOS/Windows
 * **Python**：3.10-3.12
-* **网络**：可访问 `https://api.siliconflow.cn/v1/` 及 OpenAI 服务 (如用 OpenAI API)
+* **网络**：可访问 `https://api.siliconflow.cn/v1/`
 
 ## 安装依赖
 
@@ -33,7 +33,6 @@
 
    ```bash
    git clone https://github.com/Smile-Code-1/mini_AI_magic.git
-   cd mini_AI_magic
    ```
 2. 安装 Python 依赖：
 
@@ -66,7 +65,7 @@ API_KEY=你的SiliconFlow或OpenAI API Key
 ├── .env                  # 环境变量文件，存放 API_KEY
 ├── requirements.txt      # Python 依赖清单
 ├── schema.json           # 输出 JSON Schema 定义
-├── mini_AI.py                # 主程序入口
+├── mini_AI.py            # 主程序入口
 └── README.md             # 使用说明文档
 ```
 
@@ -78,7 +77,7 @@ API_KEY=你的SiliconFlow或OpenAI API Key
    python mini_AI.py
    ```
 
-2. 按提示在终端粘贴整首歌词，输入完成后按 `Ctrl+D` (Unix/macOS) 或 `Ctrl+Z` + 回车 (Windows)。
+2. 按提示在终端粘贴整首歌词，输入完成后按 `Ctrl+Z` + 回车 (Windows)或`Ctrl+D` (Unix/macOS)。
 
 3. 程序依次输出各 Agent 的处理结果：
 
